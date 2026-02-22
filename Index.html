@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clínica Belitte - Agendar Cita</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f7ff 0%, #dbeafe 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 480px;
+      height: 90vh;
+      max-height: 800px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.5s ease;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .chat-header h1 {
+      font-size: 20px;
+      margin-bottom: 5px;
+      font-weight: 700;
+    }
+
+    .chat-header p {
+      font-size: 12px;
+      opacity: 0.95;
+      font-weight: 300;
+    }
+
+    .quick-buttons {
+      display: flex;
+      gap: 8px;
+      padding: 15px 20px;
+      flex-wrap: wrap;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      justify-content: center;
+    }
+
+    .quick-btn {
+      background: white;
+      border: 1.5px solid #2563eb;
+      color: #2563eb;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .quick-btn:hover {
+      background: #2563eb;
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8f9fa;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-track { background: #f1f1f1; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      word-wrap: break-word;
+      line-height: 1.5;
+      animation: fadeIn 0.4s ease;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .message.assistant {
+      background: white;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .message.system {
+      background: #fff3e0;
+      color: #e65100;
+      align-self: center;
+      font-size: 13px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(230, 81, 0, 0.1);
+    }
+
+    .message.success {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      color: #2e7d32;
+      align-self: center;
+      font-size: 14px;
+      text-align: center;
+      padding: 16px 20px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+      border: 1px solid #4caf50;
+    }
+
+    /* Botones de confirmación */
+    .confirmation-buttons {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      justify-content: center;
+      align-self: center;
+      width: 100%;
+      max-width: 350px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .confirm-btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .confirm-btn.accept {
+      background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .confirm-btn.accept:hover {
+      background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+
+    .confirm-btn.cancel {
+      background: white;
+      color: #666;
+      border: 2px solid #ddd;
+    }
+
+    .confirm-btn.cancel:hover {
+      background: #f5f5f5;
+      border-color: #bbb;
+      transform: translateY(-1px);
+    }
+
+    .confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 18px;
+      width: 60px;
+      align-self: flex-start;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .typing-indicator.active { display: block; }
+
+    .typing-indicator span {
+      height: 8px;
+      width: 8px;
+      background: #bbb;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 2px;
+      animation: bounce 1.4s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    .chat-input {
+      padding: 15px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+      background: white;
+      align-items: center;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .chat-input input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .chat-input button {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      min-width: 84px;
+    }
+
+    .chat-input button:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .chat-input button:active { transform: translateY(0); }
+
+    .chat-input button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Botón mic */
+    #micButton{
+      background: white;
+      color: #2563eb;
+      border: 2px solid #2563eb;
+      padding: 12px 16px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 800;
+      transition: all .2s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+      min-width: 54px;
+    }
+    #micButton:hover{ background:#2563eb; color:white; transform: translateY(-1px); }
+    #micButton.recording{ background:#ef4444; border-color:#ef4444; color:white; }
+    #micButton:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .chat-container { height: 100vh; max-height: 100vh; border-radius: 0; }
+      .chat-header h1 { font-size: 18px; }
+      .quick-btn { font-size: 12px; padding: 6px 12px; }
+      .message { font-size: 13px; }
+      .confirmation-buttons { flex-direction: column; }
+      .chat-input button { min-width: 74px; }
+    }
+
+    /* Animación de entrada */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>🏥 Clínica Belitte</h1>
+      <p>Dra. Elisa Matheus · Medicina Estética</p>
+    </div>
+
+    <div class="quick-buttons">
+      <button class="quick-btn" onclick="enviarMensajeRapido('Hola, quiero una valoración')">Valoración</button>
+      <button class="quick-btn" onclick="enviarMensajeRapido('Me interesa botox')">Botox</button>
+      <button class="quick-btn" onclick="enviarMensajeRapido('Quiero agendar una cita')">Agendar Cita</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="message assistant">
+        Hola! 👋 Soy el asistente virtual de Clínica Belitte (Dra. Elisa Matheus). Te ayudo con información y a agendar tu cita 😊
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+      <span></span><span></span><span></span>
+    </div>
+
+    <div class="chat-input">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Escribe tu mensaje..."
+        onkeypress="handleKeyPress(event)"
+        autocomplete="off"
+      />
+      <button onclick="toggleGrabacion()" id="micButton" title="Enviar audio">🎤</button>
+      <button onclick="enviarMensaje()" id="sendButton">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    // Producción:
+    const WEBHOOK_URL = 'https://ddd-ddd-n8n.lvfzoz.easypanel.host/webhook/belitte-chat';
+    // Test:
+    // const WEBHOOK_URL = 'https://ddd-ddd-n8n.lvfzoz.easypanel.host/webhook-test/belitte-chat';
+
+    let conversationHistory = [];
+    let citaConfirmada = false;
+    let ultimoMensajeBot = '';
+    let botonesConfirmacionMostrados = false;
+
+    // ========================================
+    // AUDIO (mejor compatibilidad: mp4 > webm > opus)
+    // ========================================
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recorderMimeType = '';
+    const MAX_RECORD_MS = 60 * 1000;
+    let recordTimeout = null;
+
+    async function toggleGrabacion() {
+      if (isRecording) stopGrabacion();
+      else await startGrabacion();
+    }
+
+    async function startGrabacion() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+
+        const options = {};
+        // Prioridad: mp4 (Safari) > webm (compat) > opus (calidad)
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options.mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options.mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options.mimeType = 'audio/webm;codecs=opus';
+        }
+        recorderMimeType = options.mimeType || '';
+
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(audioChunks, { type: recorderMimeType || 'audio/webm' });
+          agregarMensaje('🎙️ Audio enviado', 'user');
+          await enviarAudio(blob);
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+
+        const micBtn = document.getElementById('micButton');
+        micBtn.classList.add('recording');
+        micBtn.textContent = '⏹';
+
+        recordTimeout = setTimeout(() => {
+          if (isRecording) stopGrabacion();
+        }, MAX_RECORD_MS);
+
+      } catch (err) {
+        console.error(err);
+        agregarMensaje('❌ No pude acceder al micrófono. Revisa permisos del navegador.', 'system');
+      }
+    }
+
+    function stopGrabacion() {
+      if (!mediaRecorder) return;
+
+      clearTimeout(recordTimeout);
+      recordTimeout = null;
+
+      isRecording = false;
+
+      const micBtn = document.getElementById('micButton');
+      micBtn.classList.remove('recording');
+      micBtn.textContent = '🎤';
+
+      if (mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onloadend = () => {
+          const dataUrl = reader.result;
+          const base64 = String(dataUrl).split(',')[1];
+          resolve(base64);
+        };
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function enviarAudio(blob) {
+      document.getElementById('sendButton').disabled = true;
+      document.getElementById('messageInput').disabled = true;
+      document.getElementById('micButton').disabled = true;
+      document.getElementById('typingIndicator').classList.add('active');
+
+      try {
+        const base64 = await blobToBase64(blob);
+
+        const payload = {
+          audio: {
+            mimeType: blob.type || 'audio/webm',
+            dataBase64: base64
+          },
+          history: conversationHistory.slice(-10)
+        };
+
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+
+        let respuesta = '';
+        if (data.response) respuesta = data.response;
+        else if (data.message && data.message.content) respuesta = data.message.content;
+        else if (data.content) respuesta = data.content;
+        else if (typeof data === 'string') respuesta = data;
+
+        respuesta = limpiarRespuesta(respuesta);
+
+        if (respuesta && respuesta.length > 5 && !esMensajeTecnico(respuesta)) {
+          conversationHistory.push({ role: 'assistant', content: respuesta });
+          agregarMensaje(respuesta, 'assistant');
+          ultimoMensajeBot = respuesta;
+
+          if (esPreguntaConfirmacion(respuesta) && !botonesConfirmacionMostrados) {
+            setTimeout(() => mostrarBotonesConfirmacion(), 500);
+          }
+
+          if (esConfirmacionFinal(respuesta) && !citaConfirmada) {
+            citaConfirmada = true;
+            setTimeout(() => {
+              agregarMensaje(
+                '✅ ¡Cita agendada con éxito!\n\n' +
+                'Te esperamos en Clínica Belitte – Ensanche (Valencia) 😊',
+                'success'
+              );
+            }, 2000);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        agregarMensaje(
+          '❌ Lo siento, hubo un error enviando el audio.\n\n' +
+          'Contacta directamente:\n' +
+          '📱 +34 960 83 27 33',
+          'system'
+        );
+      } finally {
+        document.getElementById('sendButton').disabled = false;
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('micButton').disabled = false;
+        document.getElementById('typingIndicator').classList.remove('active');
+        document.getElementById('messageInput').focus();
+      }
+    }
+
+    // ========================================
+    // FUNCIONES DE LIMPIEZA Y VALIDACIÓN
+    // ========================================
+
+    function limpiarRespuesta(texto) {
+      if (!texto) return '';
+
+      texto = texto.replace(/Te lo deletreo.*/gi, '');
+      texto = texto.replace(/lo deletreo.*/gi, '');
+      texto = texto.replace(/Te lo repito.*/gi, '');
+      texto = texto.replace(/lo repito.*/gi, '');
+      texto = texto.replace(/\b[a-z]\s*-\s*[a-z]\s*-\s*[a-z].*/gi, '');
+      texto = texto.replace(/punto.*arroba.*punto com/gi, '');
+
+      texto = texto.replace(/confirmo que el (número|email) es:\s*,\s*(cierto|correcto)\?/gi, '');
+      texto = texto.replace(/el (número|email) es:\s*,\s*(cierto|correcto)\?/gi, '');
+
+      texto = texto.replace(/^\d{3}\s+\d\.\d\.\d\s+OK.*$/gm, '');
+      texto = texto.replace(/^\d+\s+\d\.\d\.\d.*$/gm, '');
+      texto = texto.replace(/.*gsmtp.*$/gm, '');
+      texto = texto.replace(/BOOKING_READY\|\|\|.*$/gm, '');
+      texto = texto.replace(/\{[\s\S]*?"index"[\s\S]*?\}/g, '');
+      texto = texto.replace(/^[\d\s\.\-\|]+$/gm, '');
+
+      texto = texto.replace(/\n{3,}/g, '\n\n');
+      texto = texto.trim();
+
+      return texto;
+    }
+
+    function esMensajeTecnico(texto) {
+      if (!texto) return true;
+
+      const patronesTecnicos = [
+        /^\d{3}\s+\d\.\d\.\d/,
+        /gsmtp/i,
+        /^[\d\s\.\-\|]+$/,
+        /^OK\s+\d+/i,
+        /"index":\s*\d+/,
+        /^null$/i,
+        /^undefined$/i,
+        /BOOKING_READY/i,
+        /^\d{3}\s/,
+        /deletreo/i,
+        /\b[a-z]\s*-\s*[a-z]\s*-\s*[a-z]/i,
+        /confirmo que el (número|email) es:\s*,/i
+      ];
+
+      return patronesTecnicos.some(patron => patron.test(texto));
+    }
+
+    function esConfirmacionFinal(texto) {
+      const patronesConfirmacion = [
+        /todo listo.*te esperamos/i,
+        /perfecto.*confirmada/i,
+        /genial.*cita.*confirmada/i,
+        /reserva confirmada/i,
+        /ya está.*te esperamos/i,
+        /nos vemos.*belitte/i
+      ];
+
+      return patronesConfirmacion.some(patron => patron.test(texto));
+    }
+
+    function esPreguntaConfirmacion(texto) {
+      const tieneResumen = (
+        texto.includes('Nombre:') &&
+        texto.includes('Email:') &&
+        texto.includes('Teléfono:') &&
+        (texto.includes('Servicio:') || texto.includes('Tratamiento:'))
+      );
+
+      const tieneConfirmacion = /todo correcto\?/i.test(texto);
+      return tieneResumen && tieneConfirmacion;
+    }
+
+    // ========================================
+    // FUNCIÓN PRINCIPAL DE ENVÍO (TEXTO)
+    // ========================================
+
+    async function enviarMensaje() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+
+      if (!message) return;
+
+      conversationHistory.push({ role: 'user', content: message });
+
+      agregarMensaje(message, 'user');
+      input.value = '';
+
+      document.getElementById('sendButton').disabled = true;
+      document.getElementById('messageInput').disabled = true;
+      document.getElementById('micButton').disabled = true;
+      document.getElementById('typingIndicator').classList.add('active');
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: message,
+            history: conversationHistory.slice(-10)
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+
+        let respuesta = '';
+        if (data.response) respuesta = data.response;
+        else if (data.message && data.message.content) respuesta = data.message.content;
+        else if (data.content) respuesta = data.content;
+        else if (typeof data === 'string') respuesta = data;
+
+        respuesta = limpiarRespuesta(respuesta);
+
+        if (respuesta && respuesta.length > 5 && !esMensajeTecnico(respuesta)) {
+          conversationHistory.push({ role: 'assistant', content: respuesta });
+
+          agregarMensaje(respuesta, 'assistant');
+          ultimoMensajeBot = respuesta;
+
+          if (esPreguntaConfirmacion(respuesta) && !botonesConfirmacionMostrados) {
+            setTimeout(() => { mostrarBotonesConfirmacion(); }, 500);
+          }
+
+          if (esConfirmacionFinal(respuesta) && !citaConfirmada) {
+            citaConfirmada = true;
+            setTimeout(() => {
+              agregarMensaje(
+                '✅ ¡Cita agendada con éxito!\n\n' +
+                'Te esperamos en Clínica Belitte – Ensanche (Valencia) 😊',
+                'success'
+              );
+            }, 2000);
+            return;
+          }
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        agregarMensaje(
+          '❌ Lo siento, hubo un error de conexión.\n\n' +
+          'Por favor, intenta de nuevo o contacta directamente:\n' +
+          '📱 +34 960 83 27 33',
+          'system'
+        );
+      } finally {
+        document.getElementById('sendButton').disabled = false;
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('micButton').disabled = false;
+        document.getElementById('typingIndicator').classList.remove('active');
+        document.getElementById('messageInput').focus();
+      }
+    }
+
+    // ========================================
+    // FUNCIONES DE BOTONES DE CONFIRMACIÓN
+    // ========================================
+
+    function mostrarBotonesConfirmacion() {
+      if (botonesConfirmacionMostrados) return;
+
+      botonesConfirmacionMostrados = true;
+      const messagesContainer = document.getElementById('chatMessages');
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'confirmation-buttons';
+      buttonsDiv.id = 'confirmButtons';
+      buttonsDiv.innerHTML = `
+        <button class="confirm-btn accept" onclick="confirmarCita()">
+          ✅ Confirmar cita
+        </button>
+        <button class="confirm-btn cancel" onclick="modificarCita()">
+          ✏️ Modificar
+        </button>
+      `;
+      messagesContainer.appendChild(buttonsDiv);
+      messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: 'smooth' });
+    }
+
+    function ocultarBotonesConfirmacion() {
+      const buttons = document.getElementById('confirmButtons');
+      if (buttons) {
+        buttons.style.opacity = '0.5';
+        buttons.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+        });
+      }
+    }
+
+    function confirmarCita() {
+      ocultarBotonesConfirmacion();
+      document.getElementById('messageInput').value = 'sí, confirmar';
+      enviarMensaje();
+    }
+
+    function modificarCita() {
+      ocultarBotonesConfirmacion();
+      document.getElementById('messageInput').value = 'quiero modificar algo';
+      enviarMensaje();
+    }
+
+    // ========================================
+    // FUNCIONES AUXILIARES
+    // ========================================
+
+    function agregarMensaje(texto, tipo) {
+      const messagesContainer = document.getElementById('chatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${tipo}`;
+      messageDiv.textContent = texto;
+      messagesContainer.appendChild(messageDiv);
+
+      setTimeout(() => {
+        messagesContainer.scrollTo({
+          top: messagesContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+
+    function enviarMensajeRapido(mensaje) {
+      document.getElementById('messageInput').value = mensaje;
+      enviarMensaje();
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        enviarMensaje();
+      }
+    }
+
+    // ========================================
+    // INICIALIZACIÓN
+    // ========================================
+
+    window.addEventListener('load', () => {
+      document.getElementById('messageInput').focus();
+    });
+
+    document.addEventListener('touchstart', function() {}, { passive: true });
+  </script>
+</body>
+</html>
